@@ -1,0 +1,71 @@
+CROSS_HOST="x86_64-w64-mingw32"
+inherit cross
+
+NAME="mingw64-x86_64-ffmpeg"
+VERSION=1.2.4
+RELEASE=1
+CATEGORY="Devel"
+SUMMARY="FFmpeg audio/video libraries for Win64 toolchain"
+DESCRIPTION="FFmpeg is a complete solution to record, convert and stream
+audio and video. It includes libavcodec, the leading audio/video codec
+library."
+HOMEPAGE="http://ffmpeg.org/"
+SRC_URI="http://ffmpeg.org/releases/ffmpeg-${VERSION}.tar.bz2"
+SRC_DIR="ffmpeg-${VERSION}"
+
+src_compile() {
+	cd ${B}
+	# -fomit-frame-pointer: http://lists.mplayerhq.hu/pipermail/mplayer-dev-eng/2006-November/047222.html
+	CFLAGS+=" -O3 -fomit-frame-pointer"
+	${S}/configure \
+		--target-os=mingw32 --arch=${CROSS_HOST%%-*} \
+		--cross-prefix=${CROSS_HOST}- --enable-cross-compile \
+		--sysroot=${CROSS_SYSROOT} \
+		--prefix=${CROSS_PREFIX} --libdir=${CROSS_LIBDIR} \
+		--shlibdir=${CROSS_BINDIR} --incdir=${CROSS_INCLUDEDIR} \
+		--enable-static --enable-shared \
+		--enable-gpl --enable-version3 \
+		--enable-postproc --enable-swscale --enable-avfilter \
+		--disable-pthreads \
+		--enable-bzlib \
+		--disable-doc \
+		--disable-programs \
+		--disable-frei0r \
+		--enable-gnutls \
+		--enable-libass \
+		--enable-libbluray \
+		--enable-libcelt \
+		--enable-libfreetype \
+		--enable-libgsm \
+		--enable-libmodplug \
+		--enable-libmp3lame \
+		--enable-libopencore-amrnb \
+		--enable-libopencore-amrwb \
+		--enable-libopenjpeg \
+		--enable-libopus \
+		--enable-librtmp \
+		--enable-libschroedinger \
+		--enable-libspeex \
+		--enable-libtheora --enable-libvorbis \
+		--enable-libvo-aacenc \
+		--enable-libvo-amrwbenc \
+		--enable-libvpx \
+		--enable-libx264 \
+		--enable-openal \
+		--enable-zlib \
+		--disable-debug \
+		--disable-optimizations \
+		--enable-yasm \
+		--disable-stripping \
+		|| error "configure failed"
+	# workaround bug in parallel make
+	cygmake version.h
+	cygmake all
+}
+
+src_install() {
+	cd ${B}
+	cyginstall SLIB_INSTALL_EXTRA_SHLIB=
+
+	sed -i -e '/^Libs.private/d' ${D}${CROSS_LIBDIR}/pkgconfig/*
+}
